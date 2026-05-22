@@ -1,6 +1,7 @@
 fastapi
 uvicorn
-tensorflow>=2.16.1
+tensorflow==2.16.1
 pillow
-numpy
+numpy<2.0.0
 gdown
+setuptools
