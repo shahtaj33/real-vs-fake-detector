@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-tensorflow-cpu==2.16.1
+ai-edge-litert
 pillow
 numpy<2.0.0
 gdown
