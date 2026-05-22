@@ -18,7 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = "best_model.tflite"
+MODEL_PATH = "model.tflite"
 # PASTE YOUR NEW TFLITE GOOGLE DRIVE FILE ID HERE!
 GOOGLE_DRIVE_FILE_ID = "1UJ87K2Myv-Y_b0B8VzG7UAv04XSSD0f_"
 
