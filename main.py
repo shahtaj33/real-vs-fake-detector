@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import gdown
 import numpy as np
 from PIL import Image
-import tflite_runtime.interpreter as tflite
+# CHANGE 1: Swapped to the official tensorflow interpreter reference
+import tensorflow.lite as tflite
 
 app = FastAPI()
 
@@ -18,8 +19,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Kept exactly as your file naming convention
 MODEL_PATH = "model.tflite"
-# PASTE YOUR NEW TFLITE GOOGLE DRIVE FILE ID HERE!
+# Kept your exact Google Drive ID
 GOOGLE_DRIVE_FILE_ID = "1UJ87K2Myv-Y_b0B8VzG7UAv04XSSD0f_"
 
 interpreter = None
