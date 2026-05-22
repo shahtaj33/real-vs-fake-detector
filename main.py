@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import gdown
 import numpy as np
 from PIL import Image
-# Swapped to Google's modern, updated LiteRT interpreter engine
 from ai_edge_litert.interpreter import Interpreter
 
 app = FastAPI()
@@ -37,7 +36,6 @@ def background_load_model():
             gdown.download(url, MODEL_PATH, quiet=False)
 
         model_loading_status = "Loading LiteRT Interpreter..."
-        # Instantiating the upgraded interpreter
         interpreter = Interpreter(model_path=MODEL_PATH)
         interpreter.allocate_tensors()
 
