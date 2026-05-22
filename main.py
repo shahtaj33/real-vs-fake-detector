@@ -1,15 +1,15 @@
 import io
 import os
+import threading
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import gdown
-import keras
 import numpy as np
 from PIL import Image
+import tflite_runtime.interpreter as tflite
 
 app = FastAPI()
 
-# Enable CORS so any front-end can talk to your backend safely
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,46 +18,67 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = "best_model.keras"
-
-# Replace this with the File ID you copied from your Google Drive link!
+MODEL_PATH = "best_model.tflite"
+# PASTE YOUR NEW TFLITE GOOGLE DRIVE FILE ID HERE!
 GOOGLE_DRIVE_FILE_ID = "1UJ87K2Myv-Y_b0B8VzG7UAv04XSSD0f_"
+
+interpreter = None
+input_details = None
+output_details = None
+model_loading_status = "Not started"
+
+
+def background_load_model():
+    global interpreter, input_details, output_details, model_loading_status
+    try:
+        if not os.path.exists(MODEL_PATH):
+            model_loading_status = "Downloading TFLite model..."
+            url = f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}"
+            gdown.download(url, MODEL_PATH, quiet=False)
+
+        model_loading_status = "Loading TFLite Interpreter..."
+        interpreter = tflite.Interpreter(model_path=MODEL_PATH)
+        interpreter.allocate_tensors()
+
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+
+        model_loading_status = "Ready"
+        print("⚡ Lightweight TFLite Model loaded successfully!")
+    except Exception as e:
+        model_loading_status = f"Failed to load: {str(e)}"
+        print(f"Error: {e}")
 
 
 @app.on_event("startup")
-def load_model():
-    global model
-    # If the model isn't downloaded yet, pull it from Google Drive automatically
-    if not os.path.exists(MODEL_PATH):
-        print("Downloading model from Google Drive...")
-        url = f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}"
-        gdown.download(url, MODEL_PATH, quiet=False)
-
-    print("Loading Keras model...")
-    model = keras.models.load_model(MODEL_PATH)
-    print("Model loaded successfully!")
+def startup_event():
+    thread = threading.Thread(target=background_load_model)
+    thread.start()
 
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    try:
-        # Read the uploaded image bytes
-        request_object_content = await file.read()
-        img = Image.open(io.BytesIO(request_object_content)).convert("RGB")
+    global interpreter, input_details, output_details, model_loading_status
 
-        # Your exact model requirement: 128x128 pixels
+    if interpreter is None:
+        return {
+            "status": "error",
+            "message": f"Model not ready. Status: {model_loading_status}",
+        }
+
+    try:
+        content = await file.read()
+        img = Image.open(io.BytesIO(content)).convert("RGB")
         img = img.resize((128, 128))
 
-        # Normalize data values
         img_array = np.array(img, dtype=np.float32) / 255.0
         input_data = np.expand_dims(img_array, axis=0)
 
-        # Run inference
-        predictions = model.predict(input_data)
-        score = float(predictions[0][0])
+        interpreter.set_tensor(input_details[0]["index"], input_data)
+        interpreter.invoke()
+        predictions = interpreter.get_tensor(output_details[0]["index"])
 
-        # Map binary classifications
-        # Assumes closer to 1 means Fake, closer to 0 means Real (Swap if yours is inverted)
+        score = float(predictions[0][0])
         real_prob = 1.0 - score
         fake_prob = score
 
@@ -74,4 +95,7 @@ async def predict(file: UploadFile = File(...)):
 
 @app.get("/")
 def read_root():
-    return {"message": "Real vs Fake Detector API by Taj is running online!"}
+    return {
+        "message": "Lightweight Detector API is online!",
+        "model_status": model_loading_status,
+    }
