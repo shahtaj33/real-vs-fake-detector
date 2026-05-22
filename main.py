@@ -6,8 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import gdown
 import numpy as np
 from PIL import Image
-# CHANGE 1: Swapped to the official tensorflow interpreter reference
-import tensorflow.lite as tflite
 
 app = FastAPI()
 
@@ -19,9 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Kept exactly as your file naming convention
 MODEL_PATH = "model.tflite"
-# Kept your exact Google Drive ID
 GOOGLE_DRIVE_FILE_ID = "1UJ87K2Myv-Y_b0B8VzG7UAv04XSSD0f_"
 
 interpreter = None
@@ -33,6 +29,14 @@ model_loading_status = "Not started"
 def background_load_model():
     global interpreter, input_details, output_details, model_loading_status
     try:
+        # 1. Try importing TensorFlow CPU first, fallback to runtime if needed
+        try:
+            import tensorflow.lite as tflite
+            print("Using TensorFlow CPU Interpreter")
+        except ImportError:
+            import tflite_runtime.interpreter as tflite
+            print("Using TFLite Runtime Interpreter")
+
         if not os.path.exists(MODEL_PATH):
             model_loading_status = "Downloading TFLite model..."
             url = f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}"
@@ -46,7 +50,7 @@ def background_load_model():
         output_details = interpreter.get_output_details()
 
         model_loading_status = "Ready"
-        print("⚡ Lightweight TFLite Model loaded successfully!")
+        print("⚡ Lightweight Model loaded successfully!")
     except Exception as e:
         model_loading_status = f"Failed to load: {str(e)}"
         print(f"Error: {e}")
