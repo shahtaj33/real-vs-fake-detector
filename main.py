@@ -21,7 +21,7 @@ app.add_middleware(
 MODEL_PATH = "best_model.keras"
 
 # Replace this with the File ID you copied from your Google Drive link!
-GOOGLE_DRIVE_FILE_ID = "1PBgNJW-0TKy_xgjCXKQK4eJkYFU0i9lk"
+GOOGLE_DRIVE_FILE_ID = "1UJ87K2Myv-Y_b0B8VzG7UAv04XSSD0f_"
 
 
 @app.on_event("startup")
