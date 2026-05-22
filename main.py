@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import gdown
 import numpy as np
 from PIL import Image
+# Swapped to Google's modern, updated LiteRT interpreter engine
+from ai_edge_litert.interpreter import Interpreter
 
 app = FastAPI()
 
@@ -29,28 +31,21 @@ model_loading_status = "Not started"
 def background_load_model():
     global interpreter, input_details, output_details, model_loading_status
     try:
-        # 1. Try importing TensorFlow CPU first, fallback to runtime if needed
-        try:
-            import tensorflow.lite as tflite
-            print("Using TensorFlow CPU Interpreter")
-        except ImportError:
-            import tflite_runtime.interpreter as tflite
-            print("Using TFLite Runtime Interpreter")
-
         if not os.path.exists(MODEL_PATH):
             model_loading_status = "Downloading TFLite model..."
             url = f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}"
             gdown.download(url, MODEL_PATH, quiet=False)
 
-        model_loading_status = "Loading TFLite Interpreter..."
-        interpreter = tflite.Interpreter(model_path=MODEL_PATH)
+        model_loading_status = "Loading LiteRT Interpreter..."
+        # Instantiating the upgraded interpreter
+        interpreter = Interpreter(model_path=MODEL_PATH)
         interpreter.allocate_tensors()
 
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
 
         model_loading_status = "Ready"
-        print("⚡ Lightweight Model loaded successfully!")
+        print("⚡ Upgraded LiteRT Model loaded successfully!")
     except Exception as e:
         model_loading_status = f"Failed to load: {str(e)}"
         print(f"Error: {e}")
